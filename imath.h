@@ -415,6 +415,10 @@ mp_result mp_int_unsigned_len(mp_int z);
     be freed by the caller. */
 const char *mp_error_string(mp_result res);
 
+mp_result mp_int_or(mp_int a, mp_int b, mp_int c);
+mp_result mp_int_xor(mp_int a, mp_int b, mp_int c);
+mp_result mp_int_and(mp_int a, mp_int b, mp_int c);
+
 #ifdef __cplusplus
 }
 #endif

@@ -1539,6 +1539,9 @@ mp_result mp_int_read_cstring(mp_int z, mp_size radix, const char *str,
     s_dmul(z, (mp_digit)radix);
     s_dadd(z, (mp_digit)ch);
     ++str;
+
+    if (*str == '_')			// AD
+		++str;
   }
 
   CLAMP(z);
@@ -2778,3 +2781,166 @@ static mp_result s_tobin(mp_int z, unsigned char *buf, int *limpos, int pad) {
 }
 
 /* Here there be dragons */
+
+static mp_digit s_uor(mp_digit *da, mp_digit *db, mp_digit *dc, mp_size size_a,
+                       mp_size size_b) {
+  mp_size pos;
+  mp_word w = 0;
+
+  /* Insure that da is the longer of the two to simplify later code */
+  if (size_b > size_a) {
+    SWAP(mp_digit *, da, db);
+    SWAP(mp_size, size_a, size_b);
+  }
+
+  /* Or corresponding digits until the shorter number runs out */
+  for (pos = 0; pos < size_b; ++pos, ++da, ++db, ++dc) {
+    w = w + ((mp_word)*da | (mp_word)*db);
+    *dc = LOWER_HALF(w);
+    w = UPPER_HALF(w);
+  }
+
+  for (/* */; pos < size_a; ++pos, ++da, ++dc) {
+    w = w | *da;
+
+    *dc = LOWER_HALF(w);
+    w = UPPER_HALF(w);
+  }
+
+  /* Return carry out */
+  return (mp_digit)w;
+}
+
+static mp_digit s_uxor(mp_digit *da, mp_digit *db, mp_digit *dc, mp_size size_a,
+                       mp_size size_b) {
+  mp_size pos;
+  mp_word w = 0;
+
+  /* Insure that da is the longer of the two to simplify later code */
+  if (size_b > size_a) {
+    SWAP(mp_digit *, da, db);
+    SWAP(mp_size, size_a, size_b);
+  }
+
+  /* Xor corresponding digits until the shorter number runs out */
+  for (pos = 0; pos < size_b; ++pos, ++da, ++db, ++dc) {
+    w = w + ((mp_word)*da ^ (mp_word)*db);
+    *dc = LOWER_HALF(w);
+    w = UPPER_HALF(w);
+  }
+
+  /* Propagate carries as far as necessary */
+  for (/* */; pos < size_a; ++pos, ++da, ++dc) {
+    w = w ^ *da;
+
+    *dc = LOWER_HALF(w);
+    w = UPPER_HALF(w);
+  }
+
+  /* Return carry out */
+  return (mp_digit)w;
+}
+
+static mp_digit s_uand(mp_digit *da, mp_digit *db, mp_digit *dc, mp_size size_a,
+                       mp_size size_b) {
+  mp_size pos;
+  mp_word w = 0;
+
+  /* Insure that da is the longer of the two to simplify later code */
+  if (size_b > size_a) {
+    SWAP(mp_digit *, da, db);
+    SWAP(mp_size, size_a, size_b);
+  }
+
+  /* And corresponding digits until the shorter number runs out */
+  for (pos = 0; pos < size_b; ++pos, ++da, ++db, ++dc) {
+    w = w + ((mp_word)*da & (mp_word)*db);
+    *dc = LOWER_HALF(w);
+    w = UPPER_HALF(w);
+  }
+
+  /* Propagate carries as far as necessary */
+  for (/* */; pos < size_a; ++pos, ++da, ++dc) {
+    w = w & *da;
+
+    *dc = LOWER_HALF(w);
+    w = UPPER_HALF(w);
+  }
+
+  /* Return carry out */
+  return (mp_digit)w;
+}
+
+mp_result mp_int_or(mp_int a, mp_int b, mp_int c) {
+  assert(a != NULL && b != NULL && c != NULL);
+
+  if (MP_SIGN(a) != MP_SIGN(b))
+	return MP_BADARG;
+
+  mp_size ua = MP_USED(a);
+  mp_size ub = MP_USED(b);
+  mp_size max = MAX(ua, ub);
+  if (!s_pad(c, max)) return MP_MEMORY;
+
+  mp_digit carry = s_uor(MP_DIGITS(a), MP_DIGITS(b), MP_DIGITS(c), ua, ub);
+  mp_size uc = max;
+
+  if (carry) {
+    if (!s_pad(c, max + 1)) return MP_MEMORY;
+
+    c->digits[max] = carry;
+    ++uc;
+  }
+
+  c->used = uc;
+  c->sign = a->sign;
+  return MP_OK;
+}
+
+mp_result mp_int_xor(mp_int a, mp_int b, mp_int c) {
+  assert(a != NULL && b != NULL && c != NULL);
+
+  if (MP_SIGN(a) != MP_SIGN(b))
+	return MP_BADARG;
+
+  mp_size ua = MP_USED(a);
+  mp_size ub = MP_USED(b);
+  mp_size max = MAX(ua, ub);
+  if (!s_pad(c, max)) return MP_MEMORY;
+
+  mp_digit carry = s_uxor(MP_DIGITS(a), MP_DIGITS(b), MP_DIGITS(c), ua, ub);
+  mp_size uc = max;
+
+  if (carry) {
+    if (!s_pad(c, max + 1)) return MP_MEMORY;
+
+    c->digits[max] = carry;
+    ++uc;
+  }
+
+  /* Drop those leading zeros */
+  while (c->digits[--max] == 0)
+	  uc--;
+
+  c->used = uc;
+  c->sign = a->sign;
+  return MP_OK;
+}
+
+mp_result mp_int_and(mp_int a, mp_int b, mp_int c) {
+  assert(a != NULL && b != NULL && c != NULL);
+
+  if (MP_SIGN(a) != MP_SIGN(b))
+	return MP_BADARG;
+
+  mp_size ua = MP_USED(a);
+  mp_size ub = MP_USED(b);
+  mp_size min = MIN(ua, ub);
+
+  s_uand(MP_DIGITS(a), MP_DIGITS(b), MP_DIGITS(c), ua, ub);
+
+  c->used = min;
+  c->sign = a->sign;
+  return MP_OK;
+}
+
