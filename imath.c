@@ -2967,3 +2967,55 @@ mp_result mp_int_popcount(mp_int z, mp_usmall *out) {
   return MP_OK;
 }
 
+mp_result mp_int_to_double(mp_int z, double *out) {
+	assert(z != NULL);
+
+	mp_sign sz = MP_SIGN(z);
+	mp_usmall uz = MP_USED(z);
+	mp_digit *dz = MP_DIGITS(z) + uz - 1;
+	double uv = 0.0;
+
+	while (uz > 0) {
+		int n = MP_DIGIT_BIT / 2;
+		while (n-- > 0) uv *= 2;
+		n = MP_DIGIT_BIT / 2;
+		while (n-- > 0) uv *= 2;
+		uv += *dz--;
+		--uz;
+	}
+
+	if (out) *out = ((sz == MP_NEG) ? -uv : uv);
+
+  return MP_OK;
+}
+
+mp_result mp_int_set_double(mp_int a, double b)
+{
+	mp_result err;
+	uint64_t frac;
+	int exp;
+	union {
+	  double   dbl;
+	  uint64_t bits;
+	} cast;
+	cast.dbl = b;
+
+	exp = (int)((unsigned)(cast.bits >> 52) & 0x7FFu);
+	frac = (cast.bits & ((1uLL << 52) - 1uLL)) | (1uLL << 52);
+
+	if (exp == 0x7FF) { /* +-inf, NaN */
+	  return MP_RANGE;
+	}
+
+	exp -= 1023 + 52;
+	mp_int_set_uvalue(a, frac);
+
+	err = exp < 0 ? mp_int_div_pow2(a, -exp, a, NULL) : mp_int_mul_pow2(a, exp, a);
+	if (err != MP_OK) return err;
+
+	if (((cast.bits >> 63) != 0uLL) && mp_int_compare_zero(a))
+		a->sign = MP_NEG;
+
+	return MP_OK;
+}
+
