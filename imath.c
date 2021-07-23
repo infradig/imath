@@ -2944,3 +2944,26 @@ mp_result mp_int_and(mp_int a, mp_int b, mp_int c) {
   return MP_OK;
 }
 
+mp_result mp_int_popcount(mp_int z, mp_usmall *out) {
+	assert(z != NULL);
+
+	if (mp_int_compare_zero(z) < 0)
+		return MP_UNDEF;
+
+	mp_usmall uz = MP_USED(z);
+	mp_digit *dz = MP_DIGITS(z) + uz - 1;
+	mp_usmall count = 0;
+	while (uz > 0) {
+		mp_usmall n = *dz--;
+		while (n > 0) {
+			n = n & (n - 1);
+			count++;
+		}
+		--uz;
+	}
+
+	if (out) *out = count;
+
+  return MP_OK;
+}
+

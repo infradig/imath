@@ -418,6 +418,7 @@ const char *mp_error_string(mp_result res);
 mp_result mp_int_or(mp_int a, mp_int b, mp_int c);
 mp_result mp_int_xor(mp_int a, mp_int b, mp_int c);
 mp_result mp_int_and(mp_int a, mp_int b, mp_int c);
+mp_result mp_int_popcount(mp_int z, mp_usmall *out);
 
 #ifdef __cplusplus
 }
