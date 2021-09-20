@@ -1542,8 +1542,6 @@ mp_result mp_int_read_cstring(mp_int z, mp_size radix, const char *str,
 
     if (*str == '_')                                                                        // AD
 		++str;                                                                              // AD
-    else if ((*str == ' ') && (str[1] != '\0' && ((ch = s_ch2val(str[1], radix)) >= 0)))    // AD
-		++str;                                                                              // AD
   }
 
   CLAMP(z);
