@@ -1539,9 +1539,6 @@ mp_result mp_int_read_cstring(mp_int z, mp_size radix, const char *str,
     s_dmul(z, (mp_digit)radix);
     s_dadd(z, (mp_digit)ch);
     ++str;
-
-    if (*str == '_')                                                                        // AD
-		++str;                                                                              // AD
   }
 
   CLAMP(z);
