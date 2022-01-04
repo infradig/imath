@@ -419,6 +419,8 @@ mp_result mp_int_or(mp_int a, mp_int b, mp_int c);
 mp_result mp_int_xor(mp_int a, mp_int b, mp_int c);
 mp_result mp_int_and(mp_int a, mp_int b, mp_int c);
 mp_result mp_int_popcount(mp_int z, mp_usmall *out);
+mp_result mp_int_lsb(mp_int z, mp_usmall *out);
+mp_result mp_int_msb(mp_int z, mp_usmall *out);
 mp_result mp_int_to_double(mp_int z, double *out);
 mp_result mp_int_set_double(mp_int a, double b);
 

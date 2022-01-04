@@ -2964,6 +2964,59 @@ mp_result mp_int_popcount(mp_int z, mp_usmall *out) {
   return MP_OK;
 }
 
+mp_result mp_int_lsb(mp_int z, mp_usmall *out) {
+	assert(z != NULL);
+
+	if (mp_int_compare_zero(z) < 1)
+		return MP_UNDEF;
+
+	mp_usmall uz = MP_USED(z);
+	mp_digit *dz = MP_DIGITS(z);
+	mp_usmall count = 0;
+	unsigned skip = 0;
+
+	while (uz-- > 0) {
+		mp_usmall n = *dz++;
+
+		if (!n) {
+			skip++;
+			continue;
+		}
+
+        while ((n & 1) == 0) {
+            ++count;
+            n = n >> 1;
+        }
+
+        break;
+	}
+
+	if (out) *out = count ? (skip*sizeof(mp_digit)*8)+count : 0;
+
+  return MP_OK;
+}
+
+mp_result mp_int_msb(mp_int z, mp_usmall *out) {
+	assert(z != NULL);
+
+	if (mp_int_compare_zero(z) < 1)
+		return MP_UNDEF;
+
+	mp_usmall uz = MP_USED(z);
+	mp_digit *dz = MP_DIGITS(z) + uz - 1;
+	mp_usmall count = 0;
+	mp_usmall n = *dz;
+
+	while (n != 0) {
+		count++;
+		n = n >> 1;
+	}
+
+	if (out) *out = count ? ((uz-1)*sizeof(mp_digit)*8) + (count-1) : 0;
+
+  return MP_OK;
+}
+
 mp_result mp_int_to_double(mp_int z, double *out) {
 	assert(z != NULL);
 
